@@ -2,13 +2,21 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 import requests
 import os
+import time
 
 # 위에서 만든 파일들 임포트
 import models
 from database import engine, get_db
 
-# DB 테이블 자동 생성 (서버 시작 시 테이블이 없으면 만듭니다)
-models.Base.metadata.create_all(bind=engine)
+# DB 테이블 자동 생성 (DB가 켜질 때까지 기다리는 '무한 재시도' 로직 추가)
+while True:
+    try:
+        models.Base.metadata.create_all(bind=engine)
+        print("✅ DB 연결 성공! 테이블 생성 완료.")
+        break  # 성공하면 반복문 탈출
+    except Exception as e:
+        print(f"⏳ DB 아직 준비 안됨... 2초 대기 중... (에러: {e})")
+        time.sleep(2) # 2초 쉬고 다시 시도
 
 app = FastAPI()
 
