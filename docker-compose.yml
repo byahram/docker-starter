@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  # 1. 데이터베이스
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. AI 모델 서빙
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "5000:5000"
+
+  # 3. 메인 백엔드
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - ai-service
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/mydb
+      # Docker 내부에서는 'localhost' 대신 서비스 이름('ai-service')을 씁니다!
+      AI_URL: http://ai-service:5000
+
+  # 4. 프론트엔드
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
